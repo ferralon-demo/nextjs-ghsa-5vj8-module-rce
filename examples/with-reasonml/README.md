@@ -7,9 +7,10 @@
 
 Download [`create-next-app`](https://github.com/segmentio/create-next-app) to bootstrap the example:
 
-```
-npm i -g create-next-app
-create-next-app --example with-reasonml with-reasonml-app
+```bash
+npx create-next-app --example with-reasonml with-reasonml-app
+# or
+yarn create next-app --example with-reasonml with-reasonml-app
 ```
 
 ### Download manually
@@ -40,7 +41,7 @@ Run BuckleScript build system `bsb -w` and `next -w` separately. For the sake
 of simple convention, `npm run dev` run both `bsb` and `next` concurrently.
 However, this doesn't offer the full [colorful and very, very, veeeery nice
 error
-output](https://reasonml.github.io/community/blog/#way-way-waaaay-nicer-error-messages)
+output](https://reasonml.github.io/blog/2017/08/25/way-nicer-error-messages.html)
 experience that ReasonML can offer, don't miss it!
 
 ## The idea behind the example
