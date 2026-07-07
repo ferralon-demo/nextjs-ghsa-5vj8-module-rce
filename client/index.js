@@ -7,6 +7,7 @@ import App from '../lib/app'
 import { loadGetInitialProps, getURL } from '../lib/utils'
 import PageLoader from '../lib/page-loader'
 import * as asset from '../lib/asset'
+import * as envConfig from '../lib/runtime-config'
 
 // Polyfill Promise globally
 // This is needed because Webpack2's dynamic loading(common chunks) code
@@ -21,11 +22,13 @@ const {
   __NEXT_DATA__: {
     props,
     err,
+    page,
     pathname,
     query,
     buildId,
     chunks,
-    assetPrefix
+    assetPrefix,
+    runtimeConfig
   },
   location
 } = window
@@ -35,6 +38,11 @@ const {
 __webpack_public_path__ = `${assetPrefix}/_next/webpack/` //eslint-disable-line
 // Initialize next/asset with the assetPrefix
 asset.setAssetPrefix(assetPrefix)
+// Initialize next/config with the environment configuration
+envConfig.setConfig({
+  serverRuntimeConfig: {},
+  publicRuntimeConfig: runtimeConfig
+})
 
 const asPath = getURL()
 
@@ -76,7 +84,7 @@ export default async ({ ErrorDebugComponent: passedDebugComponent, stripAnsi: pa
   ErrorComponent = await pageLoader.loadPage('/_error')
 
   try {
-    Component = await pageLoader.loadPage(pathname)
+    Component = await pageLoader.loadPage(page)
   } catch (err) {
     console.error(stripAnsi(`${err.message}\n${err.stack}`))
     Component = ErrorComponent

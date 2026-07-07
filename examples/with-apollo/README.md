@@ -11,9 +11,10 @@ https://next-with-apollo.now.sh
 
 Download [`create-next-app`](https://github.com/segmentio/create-next-app) to bootstrap the example:
 
-```
-npm i -g create-next-app
-create-next-app --example with-apollo with-apollo-app
+```bash
+npx create-next-app --example with-apollo with-apollo-app
+# or
+yarn create next-app --example with-apollo with-apollo-app
 ```
 
 ### Download manually
@@ -47,5 +48,3 @@ In this simple example, we integrate Apollo seamlessly with Next by wrapping our
 On initial page load, while on the server and inside `getInitialProps`, we invoke the Apollo method,  [`getDataFromTree`](http://dev.apollodata.com/react/server-side-rendering.html#getDataFromTree). This method returns a promise; at the point in which the promise resolves, our Apollo Client store is completely initialized.
 
 This example relies on [graph.cool](https://www.graph.cool) for its GraphQL backend.
-
-*Note: Apollo uses Redux internally; if you're interested in integrating the client with your existing Redux store check out the [`with-apollo-and-redux`](https://github.com/zeit/next.js/tree/master/examples/with-apollo-and-redux) example.*

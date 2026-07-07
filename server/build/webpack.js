@@ -6,7 +6,6 @@ import CaseSensitivePathPlugin from 'case-sensitive-paths-webpack-plugin'
 import WriteFilePlugin from 'write-file-webpack-plugin'
 import FriendlyErrorsWebpackPlugin from 'friendly-errors-webpack-plugin'
 import {getPages} from './webpack/utils'
-import CombineAssetsPlugin from './plugins/combine-assets-plugin'
 import PagesPlugin from './plugins/pages-plugin'
 import NextJsSsrImportPlugin from './plugins/nextjs-ssr-import'
 import DynamicChunksPlugin from './plugins/dynamic-chunks-plugin'
@@ -71,7 +70,15 @@ function externalsConfig (dir, isServer) {
       }
 
       // Webpack itself has to be compiled because it doesn't always use module relative paths
-      if (res.match(/node_modules[/\\].*\.js/) && !res.match(/node_modules[/\\]webpack/)) {
+      if (res.match(/node_modules[/\\]next[/\\]dist[/\\]pages/)) {
+        return callback()
+      }
+
+      if (res.match(/node_modules[/\\]webpack/)) {
+        return callback()
+      }
+
+      if (res.match(/node_modules[/\\].*\.js/)) {
         return callback(null, `commonjs ${request}`)
       }
 
@@ -107,7 +114,7 @@ export default async function getBaseWebpackConfig (dir, {dev = false, isServer 
     externals: externalsConfig(dir, isServer),
     context: dir,
     entry: async () => {
-      const pages = await getPages(dir, {dev, isServer})
+      const pages = await getPages(dir, {dev, isServer, pageExtensions: config.pageExtensions.join('|')})
       totalPages = Object.keys(pages).length
       const mainJS = require.resolve(`../../client/next${dev ? '-dev' : ''}`)
       const clientConfig = !isServer ? {
@@ -129,7 +136,13 @@ export default async function getBaseWebpackConfig (dir, {dev = false, isServer 
       // This saves chunks with the name given via require.ensure()
       chunkFilename: '[name]-[chunkhash].js',
       strictModuleExceptionHandling: true,
-      devtoolModuleFilenameTemplate: '[absolute-resource-path]'
+      devtoolModuleFilenameTemplate (info) {
+        if (dev) {
+          return '[absolute-resource-path]'
+        }
+
+        return `${info.absoluteResourcePath.replace(dir, '.').replace(nextDir, './node_modules/next')}`
+      }
     },
     performance: { hints: false },
     resolve: {
@@ -141,10 +154,15 @@ export default async function getBaseWebpackConfig (dir, {dev = false, isServer 
       ],
       alias: {
         next: nextDir,
-        // This bypasses React's check for production mode. Since we know it is in production this way.
-        // This allows us to exclude React from being uglified. Saving multiple seconds per build.
-        react: dev ? 'react/cjs/react.development.js' : 'react/cjs/react.production.min.js',
-        'react-dom': dev ? 'react-dom/cjs/react-dom.development.js' : 'react-dom/cjs/react-dom.production.min.js'
+        // React already does something similar to this.
+        // But if the user has react-devtools, it'll throw an error showing that
+        // we haven't done dead code elimination (via uglifyjs).
+        // We purposly do not uglify React code to save the build time.
+        // (But it didn't increase the overall build size)
+        // Here we are doing an exact match with '$'
+        // So, you can still require nested modules like `react-dom/server`
+        react$: dev ? 'react/cjs/react.development.js' : 'react/cjs/react.production.min.js',
+        'react-dom$': dev ? 'react-dom/cjs/react-dom.development.js' : 'react-dom/cjs/react-dom.production.min.js'
       }
     },
     resolveLoader: {
@@ -226,35 +244,31 @@ export default async function getBaseWebpackConfig (dir, {dev = false, isServer 
             toplevel: false,
             typeofs: false,
             unused: false,
-            conditionals: false,
+            conditionals: true,
             dead_code: true,
-            evaluate: false
+            evaluate: true
           }
         }
       }),
       new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify(dev ? 'development' : 'production')
       }),
-      !isServer && new CombineAssetsPlugin({
-        input: ['manifest.js', 'react.js', 'commons.js', 'main.js'],
-        output: 'app.js'
-      }),
       !dev && new webpack.optimize.ModuleConcatenationPlugin(),
       !isServer && new PagesPlugin(),
       !isServer && new DynamicChunksPlugin(),
-      isServer && new NextJsSsrImportPlugin({ dir, dist: config.distDir }),
+      isServer && new NextJsSsrImportPlugin(),
+      // In dev mode, we don't move anything to the commons bundle.
+      // In production we move common modules into the existing main.js bundle
       !isServer && new webpack.optimize.CommonsChunkPlugin({
-        name: `commons`,
-        filename: `commons.js`,
+        name: 'main.js',
+        filename: 'main.js',
         minChunks (module, count) {
-          // We need to move react-dom explicitly into common chunks.
-          // Otherwise, if some other page or module uses it, it might
-          // included in that bundle too.
-          if (dev && module.context && module.context.indexOf(`${sep}react${sep}`) >= 0) {
+          // React and React DOM are used everywhere in Next.js. So they should always be common. Even in development mode, to speed up compilation.
+          if (module.resource && module.resource.includes(`${sep}react-dom${sep}`) && count >= 0) {
             return true
           }
 
-          if (dev && module.context && module.context.indexOf(`${sep}react-dom${sep}`) >= 0) {
+          if (module.resource && module.resource.includes(`${sep}react${sep}`) && count >= 0) {
             return true
           }
 
@@ -265,6 +279,7 @@ export default async function getBaseWebpackConfig (dir, {dev = false, isServer 
             return false
           }
 
+          // commons
           // If there are one or two pages, only move modules to common if they are
           // used in all of the pages. Otherwise, move modules used in at-least
           // 1/2 of the total pages into commons.
@@ -272,28 +287,11 @@ export default async function getBaseWebpackConfig (dir, {dev = false, isServer 
             return count >= totalPages
           }
           return count >= totalPages * 0.5
+          // commons end
         }
       }),
-      !isServer && new webpack.optimize.CommonsChunkPlugin({
-        name: 'react',
-        filename: 'react.js',
-        minChunks (module, count) {
-          if (dev) {
-            return false
-          }
-
-          if (module.resource && module.resource.includes(`${sep}react-dom${sep}`) && count >= 0) {
-            return true
-          }
-
-          if (module.resource && module.resource.includes(`${sep}react${sep}`) && count >= 0) {
-            return true
-          }
-
-          return false
-        }
-      }),
-      !isServer && new webpack.optimize.CommonsChunkPlugin({
+      // We use a manifest file in development to speed up HMR
+      dev && !isServer && new webpack.optimize.CommonsChunkPlugin({
         name: 'manifest',
         filename: 'manifest.js'
       })
@@ -301,7 +299,7 @@ export default async function getBaseWebpackConfig (dir, {dev = false, isServer 
   }
 
   if (typeof config.webpack === 'function') {
-    webpackConfig = config.webpack(webpackConfig, {dir, dev, isServer, buildId, config, defaultLoaders})
+    webpackConfig = config.webpack(webpackConfig, {dir, dev, isServer, buildId, config, defaultLoaders, totalPages})
   }
 
   return webpackConfig

@@ -10,9 +10,10 @@
 
 Download [`create-next-app`](https://github.com/segmentio/create-next-app) to bootstrap the example:
 
-```
-npm i -g create-next-app
-create-next-app --example with-redux-saga with-redux-saga-app
+```bash
+npx create-next-app --example with-redux-saga with-redux-saga-app
+# or
+yarn create next-app --example with-redux-saga with-redux-saga-app
 ```
 
 ### Download manually
@@ -61,7 +62,7 @@ The second example, under `components/add-count.js`, shows a simple add counter 
 
 ## What changed with next-redux-saga
 
-The digital clock is updated every 800ms using the `runClockSaga` found in `saga.js`.
+The digital clock is updated every second using the `runClockSaga` found in `saga.js`.
 
 All pages are also being wrapped by `next-redux-saga` using a helper function from `store.js`:
 
