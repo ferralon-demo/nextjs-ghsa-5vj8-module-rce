@@ -99,6 +99,8 @@ jobs:
           link-to-console: true
           state-repo: ${{ github.repository }}
           state-ref: refs/tegron/state
+          scanner-version: "v0.3.1"
+          scanner-sha256: "832e803e8dba1bfef73021b86c92b423a49f5903938404544e29a0940befa20f"
       # Surface the scanner's SARIF in GitHub code scanning. Skipped on forked-PR runs,
       # where GITHUB_TOKEN has no security-events write and the upload would hard-fail.
       - name: Upload SARIF to code scanning
