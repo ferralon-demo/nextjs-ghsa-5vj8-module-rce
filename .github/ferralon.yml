@@ -1,0 +1,3 @@
+version: 1
+analyze:
+  ref: baseline
