@@ -105,6 +105,7 @@ jobs:
       # where GITHUB_TOKEN has no security-events write and the upload would hard-fail.
       - name: Upload SARIF to code scanning
         if: ${{ !github.event.pull_request.head.repo.fork }}
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@4187e74d05793876e9989daffde9c3e66b4acd07 # v3.37.3
         with:
           sarif_file: ${{ steps.assay.outputs.sarif-file }}
