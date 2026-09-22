@@ -56,6 +56,10 @@ jobs:
           commit: ${{ github.sha }}
           # Persist the durable StateStore baseline only on the default branch. A PR run stays
           # stateless and never overwrites the baseline. state-ref is the cross-team-contract ref.
+          # Link this repo's runs to the Ferralon console: a canonical-ref (main) run pushes its
+          # report to the run-snapshot sink (report_runs). The auto-prove worker enumerates
+          # fireable runs ONLY from report_runs, so an unlinked scan is invisible to the fire plane.
+          link-to-console: "true"
           state-ref: refs/tegron/state
           state-repo: ${{ github.ref_name == github.event.repository.default_branch && github.repository || '' }}
 
