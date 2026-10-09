@@ -65,6 +65,9 @@ jobs:
           # Delete once the release bakes ASSAY_RUNS_URL.
           runs-url: https://api.ferralon.com/runs
           state-ref: refs/tegron/state
+          advisory-corpus-repo: ferralon-ai/vulnerability-corpus
+          advisory-corpus-ref: main
+          advisory-corpus-policy: published-24h
           state-repo: ${{ github.ref_name == github.event.repository.default_branch && github.repository || '' }}
 
       - name: Upload the scan report bundle (build artifact)
