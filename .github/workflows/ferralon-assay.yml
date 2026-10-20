@@ -46,7 +46,7 @@ jobs:
 
       - name: Run the Ferralon Assay
         id: scan
-        uses: ferralon-ai/ferralon-assay@v0.3
+        uses: ferralon-ai/ferralon-assay@v0.5
         with:
           mode: baseline
           target: .
